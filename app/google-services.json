@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "772494182721",
+    "project_id": "tailor-f955a",
+    "storage_bucket": "tailor-f955a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:772494182721:android:8d4725f1c0bc6ec0ccf9c0",
+        "android_client_info": {
+          "package_name": "com.tailors.hisab"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "772494182721-bomkdkkt8os8rcqdeb9kcan87ao4nlch.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAX6n4mpn9DzaVh1vBRc3n8lknWOde8Nvo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "772494182721-bomkdkkt8os8rcqdeb9kcan87ao4nlch.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
