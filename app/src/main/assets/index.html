@@ -11,7 +11,7 @@
 const key='tailorsHisabV2',empty=()=>({customers:[],orders:[],payments:[],officers:[],expenses:[]});let d;try{d={...empty(),...JSON.parse(localStorage.getItem(key)||localStorage.getItem('tailorsHisabV1')||'{}')}}catch{d=empty()}const $=id=>document.getElementById(id),today=()=>new Date().toISOString().slice(0,10),money=n=>'৳'+Number(n||0).toLocaleString('en-US'),uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));document.querySelectorAll('input[type=date]').forEach(x=>x.value=today());$('month').value=today().slice(0,7);
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#nav button,.page').forEach(x=>x.classList.remove('on'));b.classList.add('on');$(b.dataset.p).classList.add('on')});
 const sum=(a,f)=>a.reduce((s,x)=>s+f(x),0),paid=o=>sum(d.payments.filter(p=>p.oid===o.id),p=>p.amount),due=o=>Math.max(0,o.total-paid(o)),row=(title,desc,right,actions='')=>'<div class="item"><h3>'+esc(title)+' <span style="float:right">'+right+'</span></h3><p>'+esc(desc)+'</p>'+actions+'</div>',del=(a,id)=>{if(confirm('রেকর্ডটি মুছবেন?')){d[a]=d[a].filter(x=>x.id!==id);save()}};
-function save(){localStorage.setItem(key,JSON.stringify(d));render()}function share(t){if(navigator.share)navigator.share({title:'টেইলার্সের হিসাব নিকাশ',text:t}).catch(()=>{});else prompt('রসিদ কপি/শেয়ার করুন',t)}
+function save(){localStorage.setItem(key,JSON.stringify(d));render();if(window.TailorApp&&cloudSignedIn)window.TailorApp.sync(JSON.stringify(d))}function share(t){if(navigator.share)navigator.share({title:'টেইলার্সের হিসাব নিকাশ',text:t}).catch(()=>{});else prompt('রসিদ কপি/শেয়ার করুন',t)}
 function render(){let income=sum(d.expenses.filter(x=>x.kind==='আয়'),x=>x.amount),cost=sum(d.expenses.filter(x=>x.kind==='খরচ'),x=>x.amount);$('stats').innerHTML=[['অর্ডার',d.orders.length],['মোট বিল',money(sum(d.orders,x=>x.total))],['আদায়',money(sum(d.payments,x=>x.amount))],['অর্ডার বকেয়া',money(sum(d.orders,due))],['আয়',money(income)],['খরচ',money(cost)],['আয়-খরচ',money(income-cost)]].map(x=>'<div class="stat"><small>'+x[0]+'</small><b>'+x[1]+'</b></div>').join('');
 $('cn').innerHTML=d.customers.map(x=>'<option value="'+esc(x.name)+'">').join('');$('sn').innerHTML=[...new Set(d.officers.map(x=>x.name))].map(x=>'<option value="'+esc(x)+'">').join('');$('po').innerHTML='<option value="">অর্ডার বাছুন</option>'+d.orders.map(o=>'<option value="'+o.id+'">'+esc(o.no+' '+o.customer+' — বাকি '+money(due(o)))+'</option>').join('');
 $('recent').innerHTML=[...d.orders].reverse().slice(0,5).map(o=>row(o.no+' '+o.customer,o.date+' | '+o.status+' | বাকি '+money(due(o)),money(o.total))).join('')||'এখনো অর্ডার নেই';
@@ -31,5 +31,18 @@ function shareOrder(id){let o=d.orders.find(x=>x.id===id);share('টেইলা
 function shareCustomer(id){let c=d.customers.find(x=>x.id===id),os=d.orders.filter(o=>o.customer===c.name);share('কাস্টমার খাতা: '+c.name+'\nমোবাইল '+c.mobile+'\nআগের বকেয়া '+money(c.opening)+'\n'+os.map(o=>o.no+' মোট '+money(o.total)+' জমা '+money(paid(o))+' বাকি '+money(due(o))).join('\n'))}
 function shareOfficer(n){n=decodeURIComponent(n);let a=d.officers.filter(x=>x.name===n);share('কর্মকর্তা '+n+'\n'+a.map(x=>x.date+' পাওনা '+money(x.amount)+' পরিশোধ '+money(x.paid)+' '+x.note).join('\n')+'\nবাকি '+money(Math.max(0,sum(a,x=>x.amount)-sum(a,x=>x.paid))))}
 function report(){let m=$('month').value,ex=d.expenses.filter(x=>x.date.startsWith(m)),p=d.payments.filter(x=>x.date.startsWith(m)),o=d.orders.filter(x=>x.date.startsWith(m)),amt=k=>sum(ex.filter(x=>x.kind===k),x=>x.amount);$('report').innerHTML='<div class="stats">'+[['অর্ডার',o.length],['অর্ডার বিল',money(sum(o,x=>x.total))],['মাসে আদায়',money(sum(p,x=>x.amount))],['আয়',money(amt('আয়'))],['খরচ',money(amt('খরচ'))],['আয়-খরচ',money(amt('আয়')-amt('খরচ'))],['অর্ডার বকেয়া',money(sum(o,due))],['কর্মকর্তা পরিশোধ',money(sum(d.officers.filter(x=>x.date.startsWith(m)),x=>x.paid))]].map(x=>'<div class="stat"><small>'+x[0]+'</small><b>'+x[1]+'</b></div>').join('')+'</div><p class="hint">আয়-খরচের পার্থক্য দৈনিক আয়/খরচ এন্ট্রি থেকে গণনা; অর্ডারের বিল আলাদাভাবে দেখানো হয়।</p>'}$('month').onchange=report;
+let cloudSignedIn=false;
+function loginCloud(){if(window.TailorApp){$('cloudStatus').textContent='Google লগইন খোলা হচ্ছে…';window.TailorApp.signIn()}else{$('cloudStatus').textContent='এই ফিচারটি Android অ্যাপে কাজ করে।'}}
+function logoutCloud(){if(window.TailorApp)window.TailorApp.signOut()}
+window.onFirebaseSession=function(email,payload){
+ cloudSignedIn=true;$('loginBtn').textContent='সিঙ্ক চালু: '+email;$('logoutBtn').style.display='inline-block';
+ if(payload){
+  try{const remote=JSON.parse(payload);for(const k of Object.keys(empty())){const byId=new Map([...(remote[k]||[]),...(d[k]||[])].map(x=>[x.id,x]));d[k]=Array.from(byId.values())}}catch(e){}
+ }
+ localStorage.setItem(key,JSON.stringify(d));render();
+ if(window.TailorApp)window.TailorApp.sync(JSON.stringify(d));
+ $('cloudStatus').textContent='Google লগইন হয়েছে। এই হিসাব ক্লাউডে সিঙ্ক করা হচ্ছে।';
+};
+window.onFirebaseSignedOut=function(){cloudSignedIn=false;$('loginBtn').textContent='Google দিয়ে লগইন / সিঙ্ক';$('logoutBtn').style.display='none';$('cloudStatus').textContent='লগআউট হয়েছে; এই ফোনের স্থানীয় হিসাব থাকবে।'};
 render();
 </script></body></html>
